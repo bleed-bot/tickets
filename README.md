@@ -1,5 +1,7 @@
 # Tickets Guide
 
+[Recent Changelog](./changelog.md)
+
 It covers:
 
 - how to set the system up
@@ -326,12 +328,12 @@ Unclaiming removes the current ticket owner.
 Moving a ticket migrates it to another option without opening a new channel.
 
 - the panel/option context is updated
-- the current claimer is cleared so the destination support staff can reclaim it
+- the current claimer is preserved if the ticket is already claimed
 - the move reason is recorded
 - the move message can be sent
 - timers are recalculated against the new option
 
-This applies to command-based moves and drag-based moves. If a ticket is moved with `tickets move`, `/move`, or a supported category drag, it becomes unclaimed.
+This applies to command-based moves and drag-based moves. If a ticket is moved with `tickets move`, `/move`, or a supported category drag, it keeps its current claim status.
 
 If an **open** ticket channel is dragged into a category that uniquely matches either:
 
@@ -341,9 +343,9 @@ If an **open** ticket channel is dragged into a category that uniquely matches e
 
 the bot will try to treat that as a move automatically.
 
-If a claimed ticket is dragged somewhere that does not resolve to a unique move target, it will still be unclaimed so another team member can reclaim it.
+If a claimed ticket is dragged somewhere that does not resolve to a unique move target, no automatic move is performed and the existing claim is kept.
 
-If a ticket is dragged into **Uncategorized**, no automatic move is performed. The channel stays uncategorized. If the ticket was claimed, it is still unclaimed there so the destination team can reclaim it later.
+If a ticket is dragged into **Uncategorized**, no automatic move is performed. The channel stays uncategorized. If the ticket was claimed, it stays claimed there too.
 
 When using `tickets move` or `/move` on a non-ticket channel, you must have **Manage Channels**. For `/move`, provide the `category` parameter to pick the destination from Discord's category selector.
 
