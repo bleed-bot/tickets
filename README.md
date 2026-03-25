@@ -307,7 +307,7 @@ When a ticket is opened:
 Claiming lets one staff member take ownership of a ticket.
 
 - the claimer is recorded
-- ticket visibility can be narrowed depending on configuration
+- ticket visibility reduced to author, claimer, admins and server owner. support/staff roles can no longer see it
 - the claim message can be sent
 
 ### Unclaim
