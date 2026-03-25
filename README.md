@@ -607,10 +607,14 @@ ticket.option.description
 ticket.option.style
 ticket.option.disabled
 ticket.option.auto_close_after
+ticket.option.auto_close_after.human
 ticket.option.inactivity_time
+ticket.option.inactivity_time.human
 ticket.option.category.id
 ticket.option.category.name
 ticket.option.category.mention
+
+The base timer variables above return raw seconds. Use the `.human` variants for formatted values like `5m`, `2h`, or `1d12h`.
 
 FORM
 ticket.form.id
