@@ -1,4 +1,5 @@
 # Tickets Guide
+
 It covers:
 
 - how to set the system up
@@ -47,6 +48,8 @@ It covers:
 
 ## Command Overview
 
+`tickets` command aliases: `ticket`, `tix`
+
 ### Management Commands
 
 ```txt
@@ -66,8 +69,8 @@ tickets allow [user|role] - Allow a user or role to see the current ticket
 tickets allow list - List users and roles explicitly allowed to see the current ticket
 tickets deny [user|role] - Remove a user or role from the current ticket
 tickets unclaim [channel] - Remove the current claimer from a ticket
-tickets rename [channel] (new name) - Rename a ticket channel
-tickets move [channel] [reason] - Move an open ticket to another panel option
+tickets rename [channel] (new name) - Rename a ticket channel, or rename any text channel if you have Manage Channels
+tickets move [channel] [reason] - Move a ticket to another option, or move a regular text channel to a category if you have Manage Channels
 tickets close [channel] [reason] - Close a ticket
 tickets delete [channel] [reason] - Delete a ticket and its channel
 tickets reopen [channel] [reason] - Reopen a ticket
@@ -82,9 +85,9 @@ tickets transcript [channel] - Generate or refresh a ticket transcript
 /allow list - List users and roles explicitly allowed to see a ticket
 /deny - Remove a user or role from a ticket
 /unclaim - Remove the current claimer from a ticket
-/rename - Rename a ticket channel
+/rename - Rename a ticket channel, or rename any text channel if you have Manage Channels
 /tickets - List all currently open tickets in the server
-/move - Move an open ticket to another panel option
+/move - Move a ticket to another option, or move a regular text channel to a category if you have Manage Channels
 /close - Close a ticket
 /delete - Delete a ticket
 /reopen - Reopen a ticket
@@ -323,9 +326,26 @@ Unclaiming removes the current ticket owner.
 Moving a ticket migrates it to another option without opening a new channel.
 
 - the panel/option context is updated
+- the current claimer is cleared so the destination support staff can reclaim it
 - the move reason is recorded
 - the move message can be sent
 - timers are recalculated against the new option
+
+This applies to command-based moves and drag-based moves. If a ticket is moved with `tickets move`, `/move`, or a supported category drag, it becomes unclaimed.
+
+If an **open** ticket channel is dragged into a category that uniquely matches either:
+
+- a ticket option's category
+- a panel's default category
+- a panel's overflow category
+
+the bot will try to treat that as a move automatically.
+
+If a claimed ticket is dragged somewhere that does not resolve to a unique move target, it will still be unclaimed so another team member can reclaim it.
+
+If a ticket is dragged into **Uncategorized**, no automatic move is performed. The channel stays uncategorized. If the ticket was claimed, it is still unclaimed there so the destination team can reclaim it later.
+
+When using `tickets move` or `/move` on a non-ticket channel, you must have **Manage Channels**. For `/move`, provide the `category` parameter to pick the destination from Discord's category selector.
 
 ### Close
 
@@ -420,7 +440,25 @@ $v{field: User && {ticket.form.field.user} inline}
 $v{field: Reason && {ticket.form.field.reason}}
 ```
 
-### Auto-Close Example
+## Conditional Blocks
+
+Conditional blocks can be used to change which content is displayed in a message, based on a given value (condition). Conditionals are a fundamental concept of programming that control the flow of a program.
+
+With conditionals, you can essentially turn your bleed ticket embeds into a program, that is able to change values based on given inputs.
+
+Supported syntax:
+
+```txt
+{if CONDITION}
+code here that displays if condition is met
+{elseif OTHER_CONDITION}
+other code here that displays if elseif condition is met
+{else}
+other code here if nothing else matches
+{/if}
+```
+
+### Auto-Close Example using if/else condition
 
 ```txt
 {embed}
@@ -429,30 +467,24 @@ $v{description: This ticket has been closed.}
 
 {if {ticket.closed_automatically} == yes}
 $v{message: This ticket was closed automatically due to inactivity.}
+{else}
+$v{message: This ticket was closed by staff.}
 {/if}
 
 $v{field: Reason && {ticket.reason.closed}}
 ```
 
-## Conditional Blocks
-
-Supported syntax:
-
-```txt
-{if CONDITION}
-content here
-{/if}
-```
 
 Supported condition types:
 
 - `{ticket.var} == value`
 - `{ticket.var} != value`
 - truthy checks such as `{if {ticket.form.id}}`
+  
+`{elseif ...}` also supports the same condition formats. You can also write it as `{else if ...}`.
 
 Current limits:
 
-- no `{else}`
 - no nesting
 
 ## Variable Basics
