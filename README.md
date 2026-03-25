@@ -1,7 +1,5 @@
 # Tickets Guide
 
-[Recent Changelog](./changelog.md)
-
 It covers:
 
 - how to set the system up
@@ -142,6 +140,17 @@ Each panel has these major settings:
   - controls whether staff can claim tickets
 - `Delete After`
   - how long a deleted ticket waits before its channel is removed
+- `Buttons`
+  - lets you customize the control buttons shown on ticket control messages
+  - configurable buttons:
+    - claim
+    - close
+    - delete
+    - reopen
+  - each button can have a custom:
+    - label
+    - emoji
+    - style
 
 ## Options
 
@@ -421,6 +430,9 @@ The ticket system supports:
 - variables like `{ticket.case}`
 - conditionals with `{if ...}{/if}` 
 
+When you leave a message field blank, the system falls back to bleed's built-in default code.
+The default code shown in the editor matches the actual default message that gets sent.
+
 ### Basic Embed Example
 
 ```txt
@@ -560,6 +572,7 @@ ticket.author.name
 ticket.author.display_name
 ticket.author.tag
 ticket.author.full
+ticket.author.mention
 
 TICKET CREATOR
 ticket.creator.id
@@ -567,6 +580,7 @@ ticket.creator.name
 ticket.creator.display_name
 ticket.creator.tag
 ticket.creator.full
+ticket.creator.mention
 
 TICKET CLAIMER
 ticket.claimer.id
@@ -574,6 +588,7 @@ ticket.claimer.name
 ticket.claimer.display_name
 ticket.claimer.tag
 ticket.claimer.full
+ticket.claimer.mention
 
 TICKET CLOSER
 ticket.closer.id
@@ -581,6 +596,7 @@ ticket.closer.name
 ticket.closer.display_name
 ticket.closer.tag
 ticket.closer.full
+ticket.closer.mention
 
 TICKET REOPENER
 ticket.reopener.id
@@ -588,6 +604,7 @@ ticket.reopener.name
 ticket.reopener.display_name
 ticket.reopener.tag
 ticket.reopener.full
+ticket.reopener.mention
 
 TICKET DELETER
 ticket.deleter.id
@@ -595,6 +612,7 @@ ticket.deleter.name
 ticket.deleter.display_name
 ticket.deleter.tag
 ticket.deleter.full
+ticket.deleter.mention
 
 TICKET CHANNEL
 ticket.channel.id
@@ -692,3 +710,4 @@ ticket.transcript.created_at.raw
 - Use `ticket.reason.closed`, `ticket.reason.reopened`, and the other reason vars for lifecycle messages.
 - Use `ticket.closed_automatically` when you want auto-close specific wording.
 - If you need a field to appear only sometimes, wrap it in `{if ...}{/if}`.
+- If an emoji field is invalid, other valid changes still save. The emoji field is skipped instead of canceling the whole edit.
