@@ -1,7 +1,5 @@
 # Tickets Guide
 
-[Recent Changelog](./changelog.md)
-
 It covers:
 
 - how to set the system up
