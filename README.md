@@ -16,9 +16,13 @@ It covers:
 - up to `25` reusable forms per server
 - button panels and dropdown panels
 - custom greeting, claim, move, close, reopen, inactivity, and log messages
+- customizable claim, close, reopen, and delete control buttons
 - optional greeting, close, and reopen DMs
 - inactivity reminders
 - auto-close timers
+- auto-delete after close timers per panel
+- per-option claim categories and claim rename templates
+- per-option close categories and close rename templates
 - per-option support roles
 - blacklists
 - transcripts
@@ -140,6 +144,9 @@ Each panel has these major settings:
   - controls whether staff can claim tickets
 - `Delete After`
   - how long a deleted ticket waits before its channel is removed
+- `Auto-Delete After Close`
+  - optional timer that deletes closed ticket channels automatically
+  - reopening or manually deleting the ticket clears that pending auto-delete
 - `Buttons`
   - lets you customize the control buttons shown on ticket control messages
   - configurable buttons:
@@ -175,6 +182,18 @@ A panel in dropdown mode uses dropdown options.
   - if not set, the system falls back to global ticket staff roles
 - `Form`
   - optional reusable form attached before ticket creation
+- `Claim Category`
+  - optional category override applied when the ticket is claimed
+  - clearing the category selection removes the override
+- `Claim Rename`
+  - optional rename template applied when the ticket is claimed
+  - leaving it blank clears the override
+- `Close Category`
+  - optional category override applied when the ticket is closed
+  - clearing the category selection removes the override
+- `Close Rename`
+  - optional rename template applied when the ticket is closed
+  - leaving it blank clears the override
 - `Greeting Message`
   - message sent into the newly opened ticket
 - `Greeting DM`
@@ -322,6 +341,8 @@ Claiming lets one staff member take ownership of a ticket.
 
 - the claimer is recorded
 - ticket visibility reduced to author, claimer, admins and server owner. support/staff roles can no longer see it
+- if the option has a claim category, the ticket is moved there on claim
+- if the option has a claim rename template, the ticket is renamed on claim
 - the claim message can be sent
 
 ### Unclaim
@@ -364,6 +385,8 @@ Closing a ticket:
 
 - marks it closed
 - hides the creator from the channel
+- if the option has a close category, the ticket is moved there on close
+- if the option has a close rename template, the ticket is renamed on close
 - records who closed it and why
 - can send a close message
 - can send a close DM
@@ -405,6 +428,15 @@ If configured on the option:
 - the system tracks the same creator activity window
 - if the creator stays inactive long enough, the ticket closes automatically
 - `ticket.closed_automatically` becomes available for templates
+
+### Auto-Delete After Close
+
+If configured on the panel:
+
+- once a ticket is closed, a delete timer starts
+- reopening the ticket clears that timer
+- deleting the ticket manually clears that timer too
+- when the timer expires, the closed ticket channel is deleted automatically
 
 ## Transcripts
 
@@ -690,6 +722,7 @@ ticket.form.field.<key>.name
 ticket.form.field.<key>.display_name
 ticket.form.field.<key>.tag
 ticket.form.field.<key>.full
+ticket.form.field.<key>.mention
 
 role_select / channel_select:
 ticket.form.field.<key>.id
@@ -710,4 +743,3 @@ ticket.transcript.created_at.raw
 - Use `ticket.reason.closed`, `ticket.reason.reopened`, and the other reason vars for lifecycle messages.
 - Use `ticket.closed_automatically` when you want auto-close specific wording.
 - If you need a field to appear only sometimes, wrap it in `{if ...}{/if}`.
-- If an emoji field is invalid, other valid changes still save. The emoji field is skipped instead of canceling the whole edit.
