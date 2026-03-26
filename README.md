@@ -1,5 +1,7 @@
 # Tickets Guide
 
+[Recent Changelog](./changelog.md)
+
 It covers:
 
 - how to set the system up
@@ -15,7 +17,7 @@ It covers:
 - up to `75` active options at once (5 * 15)
 - up to `25` reusable forms per server
 - button panels and dropdown panels
-- custom greeting, claim, move, close, reopen, inactivity, and log messages
+- custom greeting, claim, move, close, reopen, inactivity, auto-delete, and log messages
 - customizable claim, close, reopen, and delete control buttons
 - optional greeting, close, and reopen DMs
 - inactivity reminders
@@ -79,7 +81,7 @@ tickets close [channel] [reason] - Close a ticket
 tickets delete [channel] [reason] - Delete a ticket and its channel
 tickets reopen [channel] [reason] - Reopen a ticket
 tickets claim [channel] [reason] - Claim a ticket
-tickets transcript [channel] - Generate or refresh a ticket transcript
+tickets transcript [channel|case_id] - Generate or refresh a ticket transcript, or fetch an existing one by case ID
 ```
 
 ### Slash Commands
@@ -96,7 +98,7 @@ tickets transcript [channel] - Generate or refresh a ticket transcript
 /delete - Delete a ticket
 /reopen - Reopen a ticket
 /claim - Claim a ticket
-/transcript - Generate or refresh a ticket transcript
+/transcript - Generate or refresh a ticket transcript, or fetch an existing one by case ID
 ```
 
 ## Panels
@@ -121,6 +123,9 @@ Each panel has these major settings:
   - where ticket deletion logs and transcript logs are sent
 - `Log Message`
   - custom log template used when logging ticket closures/deletions
+- `Auto-Delete Message`
+  - custom template sent when a closed ticket is scheduled for automatic deletion
+  - only used when `Auto-Delete After Close` is enabled
 - `Default Category`
   - primary category used for tickets opened on this panel
 - `Overflow Category`
@@ -144,9 +149,7 @@ Each panel has these major settings:
   - controls whether staff can claim tickets
 - `Delete After`
   - how long a deleted ticket waits before its channel is removed
-- `Auto-Delete After Close`
-  - optional timer that deletes closed ticket channels automatically
-  - reopening or manually deleting the ticket clears that pending auto-delete
+  - set it to `0s` if you want deletion to happen immediately
 - `Buttons`
   - lets you customize the control buttons shown on ticket control messages
   - configurable buttons:
@@ -206,6 +209,12 @@ A panel in dropdown mode uses dropdown options.
   - message sent when the ticket is closed
 - `Close DM`
   - optional DM version of the close message
+- `Auto-Delete Message`
+  - optional message sent when this option automatically deletes a closed ticket
+- `Auto-Delete Timer`
+  - optional per-option timer that deletes closed ticket channels automatically
+  - set it to `0s` if you want the ticket to delete immediately after it is closed
+  - reopening or manually deleting the ticket clears that pending auto-delete
 - `Reopen Message`
   - message sent when the ticket is reopened
 - `Reopen DM`
@@ -407,7 +416,7 @@ Deleting a ticket:
 
 - marks the ticket deleted
 - records who deleted it and why
-- can generate or update a transcript
+- generates or refreshes a transcript before deletion, even if no log channel is configured
 - can log the final result in the configured log channel
 - removes the channel after the configured delete delay
 
@@ -431,9 +440,10 @@ If configured on the option:
 
 ### Auto-Delete After Close
 
-If configured on the panel:
+If configured on the option:
 
 - once a ticket is closed, a delete timer starts
+- the auto-delete message is sent when that timer starts
 - reopening the ticket clears that timer
 - deleting the ticket manually clears that timer too
 - when the timer expires, the closed ticket channel is deleted automatically
@@ -443,14 +453,19 @@ If configured on the panel:
 The transcript system can:
 
 - generate a transcript on demand
+- generate or refresh a transcript automatically when a ticket is closed
+- generate or refresh a transcript automatically when a ticket is deleted, even without a log channel
 - refresh an existing transcript for the same ticket
 - reuse the same transcript record instead of making endless duplicates
 - include transcript links in logs and variables
+- fetch an existing saved transcript by case ID
 
 Available access paths:
 
 - `tickets transcript`
+- `tickets transcript 123`
 - `/transcript`
+- `/transcript case_id:123`
 
 ## Custom Messages And Embeds
 
@@ -461,6 +476,8 @@ The ticket system supports:
 - message content inside embed mode with `$v{message: ...}`
 - variables like `{ticket.case}`
 - conditionals with `{if ...}{/if}` 
+
+This includes panel messages, option lifecycle messages, log messages, and the controller auto-delete message.
 
 When you leave a message field blank, the system falls back to bleed's built-in default code.
 The default code shown in the editor matches the actual default message that gets sent.
@@ -579,6 +596,11 @@ ticket.migrated_at.short
 ticket.closed_at
 ticket.closed_at.raw
 ticket.closed_at.short
+ticket.auto_delete_after_close
+ticket.auto_delete_after_close.human
+ticket.auto_delete_at
+ticket.auto_delete_at.raw
+ticket.auto_delete_at.short
 ticket.reopened_at
 ticket.reopened_at.raw
 ticket.reopened_at.short
@@ -692,13 +714,15 @@ ticket.option.style
 ticket.option.disabled
 ticket.option.auto_close_after
 ticket.option.auto_close_after.human
+ticket.option.auto_delete_after_close
+ticket.option.auto_delete_after_close.human
 ticket.option.inactivity_time
 ticket.option.inactivity_time.human
 ticket.option.category.id
 ticket.option.category.name
 ticket.option.category.mention
 
-The base timer variables above return raw seconds. Use the `.human` variants for formatted values like `5m`, `2h`, or `1d12h`.
+The base timer variables above return raw seconds. Use the `.human` variants for formatted values like `5m`, `2h`, or `1d12h`. `ticket.auto_delete_at` uses the ticket's closed time plus the option auto-delete timer.
 
 FORM
 ticket.form.id
@@ -733,6 +757,10 @@ TRANSCRIPT
 ticket.transcript.url
 ticket.transcript.created_at
 ticket.transcript.created_at.raw
+ticket.transcript.created_at.short
+ticket.transcript.expires_at
+ticket.transcript.expires_at.raw
+ticket.transcript.expires_at.short
 ```
 
 ## Tips
