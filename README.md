@@ -7,6 +7,14 @@ It covers:
 - how panels, options, forms, timers, and transcripts work
 - how to use ticket variables in message templates
 
+The current management UI is grouped by section:
+
+- panels: `Behavior`, `Categories`, `Display`, `Messages`
+- options: `Behavior`, `Form`, `Messages`, `Style`
+- option `Behavior`: `Categories`, `Naming`, `Permissions`, `Button UX`
+- option `Permissions`: `Member`, `Support`, `Trainees`
+- option `Messages`: `Greeting`, `Required Roles`, `Claim`, `Move`, `Close`, `Reopen`, `Inactivity`, `Auto-Close`, `Auto-Delete`
+
 ## What The System Supports
 
 - up to `15` ticket panels per server
@@ -15,16 +23,25 @@ It covers:
 - up to `75` active options at once (5 * 15)
 - up to `25` reusable forms per server
 - button panels and dropdown panels
-- custom greeting, claim, move, close, reopen, inactivity, auto-delete, and log messages
-- customizable claim, close, reopen, and delete control buttons
+- custom greeting, required roles, claim, move, close, reopen, inactivity, auto-close, auto-delete, and log messages
+- per-option claim, close, reopen, and delete button colors
+- per-option claim, close, reopen, and delete reason popup toggles
 - optional greeting, close, and reopen DMs
 - inactivity reminders
 - auto-close timers
-- auto-delete after close timers per panel
+- auto-delete after close timers per option
+- close-on-leave automation per option
+- per-option channel name format overrides
 - per-option claim categories and claim rename templates
+- per-option claim staff visibility toggles
 - per-option close categories and close rename templates
+- per-option ticket opener close toggles
 - per-option support roles
+- per-option trainee roles
+- per-option required-role gates with any-role or all-role matching
+- per-option trainee claim, close, and speak toggles
 - blacklists
+- lifecycle-aware manual ticket access with `allow` / `deny`
 - transcripts
 - reusable pre-open forms
 
@@ -33,17 +50,16 @@ It covers:
 1. Create a panel with `tickets panels`.
 2. Configure the panel settings:
    - channel
-   - mode
+   - behavior
    - categories
+   - display
    - panel message
-   - max open tickets
    - log settings
 3. Open `tickets options`. You will see one has been automatically created, of the type you picked.
 4. Configure that option:
    - label
    - emoji
-   - category override if wanted
-   - support roles
+   - behavior
    - greeting and lifecycle messages
    - timers
    - optional form
@@ -69,8 +85,8 @@ tickets list - List all currently open tickets in the server
 ### Ticket Action Commands
 
 ```txt
-tickets allow [user|role] - Allow a user or role to see the current ticket
-tickets allow list - List users and roles explicitly allowed to see the current ticket
+tickets allow [user|role] - Allow a user or role to view and send in the current ticket
+tickets allow list - List users and roles explicitly allowed in the current ticket
 tickets deny [user|role] - Remove a user or role from the current ticket
 tickets unclaim [channel] - Remove the current claimer from a ticket
 tickets rename [channel] (new name) - Rename a ticket channel, or rename any text channel if you have Manage Channels
@@ -85,8 +101,8 @@ tickets transcript [channel|case_id] - Generate or refresh a ticket transcript, 
 ### Slash Commands
 
 ```txt
-/allow add - Allow a user or role to see a ticket
-/allow list - List users and roles explicitly allowed to see a ticket
+/allow add - Allow a user or role to view and send in a ticket
+/allow list - List users and roles explicitly allowed in a ticket
 /deny - Remove a user or role from a ticket
 /unclaim - Remove the current claimer from a ticket
 /rename - Rename a ticket channel, or rename any text channel if you have Manage Channels
@@ -99,66 +115,207 @@ tickets transcript [channel|case_id] - Generate or refresh a ticket transcript, 
 /transcript - Generate or refresh a ticket transcript, or fetch an existing one by case ID
 ```
 
+## Permissions
+
+Ticket command permissions are enforced by the bot at runtime.
+There are no special Discord app-command default permission flags on the slash commands here.
+
+All ticket commands require the guild to be allowed to use the ticket system first.
+All slash ticket commands are guild-only.
+
+### Management Commands
+
+These require:
+
+- ticket system access in the guild
+- Tier 3 / top-customer access, or a `100k+` member server
+- effective `administrator`
+
+Commands:
+
+- `tickets resend`
+- `tickets panels`
+- `tickets forms`
+- `tickets options`
+- `tickets blacklist`
+
+### Stats And Listing Commands
+
+These require:
+
+- ticket system access in the guild
+- Tier 3 / top-customer access, or a `100k+` member server
+- one of:
+  - effective `administrator`
+  - a configured global ticket `staff role`
+  - any configured ticket option `support role`
+
+Commands:
+
+- `tickets stats`
+- `tickets list`
+- `/tickets`
+
+### Claim
+
+These require:
+
+- ticket system access in the guild
+- claiming enabled on that panel/option
+- the ticket must not already be claimed
+- the ticket creator cannot claim their own ticket
+- one of:
+  - server owner / effective `administrator`
+  - a configured option `support role`
+  - a configured option `trainee role` with `Trainees Can Claim` enabled
+  - a configured global ticket `staff role` when no support roles are set on that option
+
+Commands:
+
+- `tickets claim`
+- `/claim`
+
+### Close
+
+These require:
+
+- ticket system access in the guild
+- one of:
+  - the ticket creator, if `Ticket Opener Can Close` is enabled on that option
+  - the current claimer
+  - server owner / effective `administrator`
+  - a configured option `support role` if the ticket is not currently claimed
+  - a configured option `trainee role` with `Trainees Can Close` enabled if the ticket is not currently claimed
+  - a configured global ticket `staff role` if the ticket is not currently claimed and the option has no support roles
+
+Commands:
+
+- `tickets close`
+- `/close`
+
+### Delete / Reopen / Move / Transcript / Allow / Deny / Allow List / Unclaim
+
+For ticket channels, these all share the same main access rule:
+
+- ticket system access in the guild
+- one of:
+  - the current claimer
+  - server owner / effective `administrator`
+  - a configured option `support role` if the ticket is not currently claimed
+  - a configured global ticket `staff role` if the ticket is not currently claimed and the option has no support roles
+
+Commands:
+
+- `tickets delete`
+- `/delete`
+- `tickets reopen`
+- `/reopen`
+- `tickets move`
+- `/move`
+- `tickets transcript`
+- `/transcript`
+- `tickets allow`
+- `tickets allow list`
+- `/allow add`
+- `/allow list`
+- `tickets deny`
+- `/deny`
+- `tickets unclaim`
+- `/unclaim`
+
+Extra notes:
+
+- `allow` and `deny` also require the bot to have `Manage Channels`.
+- `transcript` by case ID falls back to archived transcript access. If there is no matching live ticket record, only the server owner or an effective administrator can access it.
+
+### Rename
+
+For ticket channels:
+
+- same permissions as the shared ticket-action group above
+
+For non-ticket channels:
+
+- the actor must have effective `Manage Channels`
+
+Commands:
+
+- `tickets rename`
+- `/rename`
+
+### Move On Non-Ticket Channels
+
+For non-ticket channels:
+
+- the actor must have effective `Manage Channels`
+
+Commands:
+
+- `tickets move`
+- `/move`
+
+### Role Priority
+
+When an option uses a mix of support roles, trainee roles, and global staff roles, the system resolves them in this order:
+
+- `support`
+- `trainee`
+- `staff`
+
+That means:
+
+- if someone has both an option support role and an option trainee role, they are treated as `support`
+- if someone has an option trainee role and also has a generic global staff role, they are treated as `trainee`
+- generic staff roles do not override option-specific trainee behavior
+
 ## Panels
 
 Panels are the public entry points users click to open tickets.
 
-Each panel has these major settings:
+Panel management is grouped into these sections:
 
-- `Name`
-  - internal name for management
-  - must be unique per server
-- `Channel`
-  - where the live panel message is posted
-  - can be changed by resending the panel
-- `Mode`
-  - `button` or `dropdown`
-  - each panel keeps saved options for both modes
-- `Panel Message`
-  - the public message users click to open tickets
-  - supports embeds and variables
-- `Log Channel`
-  - where ticket deletion logs and transcript logs are sent
-- `Log Message`
-  - custom log template used when logging ticket closures/deletions
-- `Auto-Delete Message`
-  - custom template sent when a closed ticket is scheduled for automatic deletion
-  - only used when `Auto-Delete After Close` is enabled
-- `Default Category`
-  - primary category used for tickets opened on this panel
-- `Overflow Category`
-  - fallback category if the default category is full or unavailable
-- `Maximum Open Tickets`
-  - how many tickets one member may have open on this panel at once
-- `Channel Name Format`
-  - how ticket channels are named
-  - built-in options:
-    - case number
-    - username
-    - custom template
-- `Case Padding`
-  - pads case numbers for cleaner channel names
-  - example: `7` becomes `0007`
-- `Dropdown Placeholder`
-  - only used when the panel is in dropdown mode
-- `Auto-Pin Controls`
-  - auto-pins the ticket control message
-- `Claims Enabled`
-  - controls whether staff can claim tickets
-- `Delete After`
-  - how long a deleted ticket waits before its channel is removed
-  - set it to `0s` if you want deletion to happen immediately
-- `Buttons`
-  - lets you customize the control buttons shown on ticket control messages
-  - configurable buttons:
-    - claim
-    - close
-    - delete
-    - reopen
-  - each button can have a custom:
-    - label
-    - emoji
-    - style
+- `Behavior`
+  - `Delete Delay`
+    - how long a deleted ticket waits before its channel is removed
+    - set it to `0s` if you want deletion to happen immediately
+  - `Maximum Open Tickets`
+    - how many tickets one member may have open on this panel at once
+  - `Auto-Pin Controls`
+    - auto-pins the ticket control message
+  - `Claims Enabled`
+    - controls whether staff can claim tickets
+- `Categories`
+  - `Default Category`
+    - primary category used for tickets opened on this panel
+  - `Overflow Category`
+    - fallback category if the default category is full or unavailable
+- `Display`
+  - `Channel Name Format`
+    - how ticket channels are named
+    - built-in options:
+      - case number
+      - username
+      - custom template
+  - `Case Padding`
+    - pads case numbers for cleaner channel names
+    - example: `7` becomes `0007`
+  - `Dropdown Placeholder`
+    - only shown and used when the panel is in dropdown mode
+  - `Tickets Mode`
+    - `button` or `dropdown`
+    - each panel keeps saved options for both modes
+- `Messages`
+  - `Panel Message`
+    - the public message users click to open tickets
+    - supports embeds and variables
+  - `Log Message`
+    - custom log template used when logging ticket closures/deletions
+    - also controls the log channel used for ticket logs
+  - `Auto-Delete Message`
+    - custom template sent when a closed ticket is scheduled for automatic deletion
+    - only used when `Auto-Delete After Close` is enabled
+
+Panel-level claim, close, reopen, and delete button styling is no longer configured here. Those button colors now live on the ticket option that opened the ticket.
 
 ## Options
 
@@ -175,26 +332,8 @@ A panel in dropdown mode uses dropdown options.
   - optional emoji shown on the option
 - `Disabled`
   - prevents users from opening tickets with that option
-- `Category`
-  - optional per-option category override
-  - falls back to panel categories if not set
-- `Support Roles`
-  - staff roles that should see or manage tickets from that option
-  - if not set, the system falls back to global ticket staff roles
 - `Form`
   - optional reusable form attached before ticket creation
-- `Claim Category`
-  - optional category override applied when the ticket is claimed
-  - clearing the category selection removes the override
-- `Claim Rename`
-  - optional rename template applied when the ticket is claimed
-  - leaving it blank clears the override
-- `Close Category`
-  - optional category override applied when the ticket is closed
-  - clearing the category selection removes the override
-- `Close Rename`
-  - optional rename template applied when the ticket is closed
-  - leaving it blank clears the override
 - `Greeting Message`
   - message sent into the newly opened ticket
 - `Greeting DM`
@@ -207,6 +346,11 @@ A panel in dropdown mode uses dropdown options.
   - message sent when the ticket is closed
 - `Close DM`
   - optional DM version of the close message
+- `Auto-Close Message`
+  - optional message sent when this option closes a ticket automatically
+- `Auto-Close Timer`
+  - optional per-option timer that closes tickets after author inactivity
+  - set it between `1m` and `30d`
 - `Auto-Delete Message`
   - optional message sent when this option automatically deletes a closed ticket
 - `Auto-Delete Timer`
@@ -221,8 +365,68 @@ A panel in dropdown mode uses dropdown options.
   - reminder sent when the creator has gone quiet for too long
 - `Inactivity Timer`
   - how long to wait before sending the inactivity reminder
-- `Auto-Close Timer`
-  - how long to wait before automatically closing the ticket
+- `Required Roles Message`
+  - ephemeral denial message shown when a member fails this option's required-role check
+  - edited from the option `Messages` section
+
+Option behavior is grouped into these sections:
+
+- `Categories`
+  - `Category`
+    - optional per-option category override
+    - falls back to panel categories if not set
+  - `Claim Category`
+    - optional category override applied when the ticket is claimed
+  - `Close Category`
+    - optional category override applied when the ticket is closed
+- `Naming`
+  - `Channel Name Format`
+    - optional per-option override for the panel channel naming format
+  - `Claim Rename Template`
+    - optional rename template applied when the ticket is claimed
+  - `Close Rename Template`
+    - optional rename template applied when the ticket is closed
+- `Permissions`
+  - `Member`
+    - `Required Roles`
+      - only members with these roles can open tickets from this option
+      - if left empty, anyone allowed to use the ticket system can open the option
+    - `Require All Roles`
+      - requires every selected role instead of allowing any one of them
+      - only matters when at least one required role is configured
+    - `Ticket Creator Can Close`
+      - controls whether the ticket creator can close tickets from this option
+    - `Close On Leave`
+      - automatically closes open tickets from this option if the ticket creator leaves the server
+      - uses the normal close flow and records the reason as `Ticket opener left the server.`
+  - `Support`
+    - `Support Roles`
+      - staff roles that should see or manage tickets from that option
+      - if not set, the system falls back to global ticket staff roles
+    - `Keep Staff Visible On Claim`
+      - lets option support roles keep seeing claimed tickets
+      - if the option has no support roles, configured global ticket staff roles stay visible instead
+      - disabled by default
+    - `Staff Can Speak On Claim`
+      - lets support roles that remain visible on claimed tickets continue replying there
+      - only matters when `Keep Staff Visible On Claim` is enabled
+  - `Trainees`
+    - `Trainee Roles`
+      - trainee roles that should always be able to see tickets from this option
+    - `Trainees Can Claim`
+      - allows configured trainees to claim tickets from this option
+    - `Trainees Can Close`
+      - allows configured trainees to close tickets from this option
+    - `Trainees Can Speak`
+      - allows configured trainees to reply in tickets from this option by default
+- `Button UX`
+  - each action has its own editor: `Claim`, `Close`, `Reopen`, `Delete`
+  - each action can set:
+    - button label
+    - button emoji
+    - button color
+    - reason popup on or off
+  - the `Delete` button still keeps its confirmation step even if its reason popup is disabled
 
 ### Button-Only Settings
 
@@ -237,6 +441,15 @@ A panel in dropdown mode uses dropdown options.
 ## Forms
 
 Forms are reusable intake flows that run before a ticket channel is created.
+
+### Form Settings
+
+- `Name`
+  - internal form name
+- `Title`
+  - visible modal title shown to users
+- `Filtering Enabled`
+  - whether server word filter and AutoMod keyword checks run against text answers before a ticket is opened
 
 ### Key Rules
 
@@ -312,9 +525,9 @@ Type-specific settings:
 - `tickets blacklist @role`
   - toggles a role on or off the ticket blacklist
 - `tickets allow @member`
-  - explicitly lets a user see the current ticket
+  - explicitly lets a user view and send messages in the current ticket while it is open
 - `tickets allow @role`
-  - explicitly lets a role see the current ticket
+  - explicitly lets a role view and send messages in the current ticket while it is open
 - `tickets allow list`
   - shows the extra users and roles that were explicitly allowed into the current ticket
 - `tickets deny @member`
@@ -323,11 +536,14 @@ Type-specific settings:
   - removes a role's explicit ticket access
 
 Blacklisted members or roles cannot open tickets.
+If an option has `Required Roles` configured, those checks also run before the ticket is opened.
 
 Support visibility is controlled per option.
 If an option does not define support roles, the system falls back to the global ticket staff role configuration.
 Allow and deny are for extra ticket access on a specific ticket.
 They do not replace the creator, claimer, or the ticket's built-in support/staff visibility rules.
+Manual allow entries are preserved through claim and unclaim, denied while the ticket is closed, and restored if the ticket is reopened.
+Using `deny` removes that manual access entry entirely.
 
 ## Ticket Lifecycle
 
@@ -336,6 +552,7 @@ They do not replace the creator, claimer, or the ticket's built-in support/staff
 When a ticket is opened:
 
 - the selected panel and option are recorded
+- blacklist and required-role checks run before the channel is created
 - the channel is created in the option category or panel category
 - the creator gets access
 - the panel/option context is saved for later messages, logs, and variables
@@ -347,7 +564,10 @@ When a ticket is opened:
 Claiming lets one staff member take ownership of a ticket.
 
 - the claimer is recorded
-- ticket visibility reduced to author, claimer, admins and server owner. support/staff roles can no longer see it
+- ticket visibility is reduced to the author, claimer, admins, and server owner by default
+- if `Keep Staff Visible On Claim` is enabled on that option, the option support roles stay visible too
+- if that option has no support roles, the server's global ticket staff roles stay visible instead
+- manually allowed users and roles stay allowed while the ticket remains open
 - if the option has a claim category, the ticket is moved there on claim
 - if the option has a claim rename template, the ticket is renamed on claim
 - the claim message can be sent
@@ -358,6 +578,7 @@ Unclaiming removes the current ticket owner.
 
 - the claimer is cleared
 - normal ticket visibility is restored
+- manually allowed users and roles stay allowed
 - the standard ticket controls come back
 
 ### Move
@@ -392,6 +613,7 @@ Closing a ticket:
 
 - marks it closed
 - hides the creator from the channel
+- also denies manually allowed users and roles while the ticket is closed
 - if the option has a close category, the ticket is moved there on close
 - if the option has a close rename template, the ticket is renamed on close
 - records who closed it and why
@@ -404,6 +626,7 @@ Reopening a ticket:
 
 - marks it open again
 - restores the creator
+- restores manually allowed users and roles that were hidden on close
 - records who reopened it and why
 - can send a reopen message
 - can send a reopen DM
@@ -434,6 +657,7 @@ If configured on the option:
 
 - the system tracks the same creator activity window
 - if the creator stays inactive long enough, the ticket closes automatically
+- the auto-close message is sent when that timer triggers
 - `ticket.closed_automatically` becomes available for templates
 
 ### Auto-Delete After Close
@@ -446,6 +670,15 @@ If configured on the option:
 - deleting the ticket manually clears that timer too
 - when the timer expires, the closed ticket channel is deleted automatically
 
+### Close On Leave
+
+If `Close On Leave` is enabled on the option:
+
+- any still-open ticket from that option closes automatically when the ticket creator leaves the server
+- it uses the normal close flow instead of a special one-off shutdown path
+- close category moves, close rename templates, close messages, and close DMs still behave normally
+- the recorded close reason becomes `Ticket opener left the server.`
+
 ## Transcripts
 
 The transcript system can:
@@ -456,6 +689,7 @@ The transcript system can:
 - refresh an existing transcript for the same ticket
 - reuse the same transcript record instead of making endless duplicates
 - include transcript links in logs and variables
+- include transcript expiration timestamps in variables and the default transcript log
 - fetch an existing saved transcript by case ID
 
 Available access paths:
@@ -475,10 +709,24 @@ The ticket system supports:
 - variables like `{ticket.case}`
 - conditionals with `{if ...}{/if}` 
 
-This includes panel messages, option lifecycle messages, log messages, and the controller auto-delete message.
+This includes panel messages, option lifecycle messages, option required-role denial messages, option auto-close and auto-delete messages, and log messages.
 
 When you leave a message field blank, the system falls back to bleed's built-in default code.
 The default code shown in the editor matches the actual default message that gets sent.
+
+### Required Roles Messages
+
+Each option has its own `Required Roles` message in the option `Messages` section.
+
+Use it when you want a custom response for members who are not allowed to open that option.
+
+Important behavior:
+
+- it is always sent ephemerally (invisibly)
+- it is only shown when the member fails the option's required-role check
+- role mentions and `@everyone` are suppressed there
+- only the clicking member can be pinged
+- it works especially well with the `ticket.option.required_roles.*` variables listed below
 
 ### Basic Embed Example
 
@@ -719,8 +967,17 @@ ticket.option.inactivity_time.human
 ticket.option.category.id
 ticket.option.category.name
 ticket.option.category.mention
+ticket.option.required_roles
+ticket.option.required_roles.names
+ticket.option.required_roles.mentions
+ticket.option.required_roles.count
+ticket.option.required_roles.mode
+ticket.option.required_roles.match_all
 
 The base timer variables above return raw seconds. Use the `.human` variants for formatted values like `5m`, `2h`, or `1d12h`. `ticket.auto_delete_at` uses the ticket's closed time plus the option auto-delete timer.
+
+`ticket.option.required_roles.mode` returns `Any` or `All`.
+`ticket.option.required_roles.match_all` returns `yes` or `no`.
 
 FORM
 ticket.form.id
@@ -763,9 +1020,11 @@ ticket.transcript.expires_at.short
 
 ## Tips
 
+- You can search in any user, role, or channel dropdown if your desired option is not showing up.
 - Use `ticket.form.field.<key>` for the display value users submitted.
 - Use `ticket.form.field.<key>.raw` when you need the raw stored value or selected ID.
 - `ticket.creator.*` is an alias of `ticket.author.*`.
 - Use `ticket.reason.closed`, `ticket.reason.reopened`, and the other reason vars for lifecycle messages.
 - Use `ticket.closed_automatically` when you want auto-close specific wording.
+- Use `ticket.option.required_roles.mentions` and `ticket.option.required_roles.mode` in the `Required Roles` message when you want the denial to explain exactly what the member is missing.
 - If you need a field to appear only sometimes, wrap it in `{if ...}{/if}`.
