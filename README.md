@@ -117,18 +117,10 @@ tickets transcript [channel|case_id] - Generate or refresh a ticket transcript, 
 
 ## Permissions
 
-Ticket command permissions are enforced by the bot at runtime.
-There are no special Discord app-command default permission flags on the slash commands here.
-
-All ticket commands require the guild to be allowed to use the ticket system first.
-All slash ticket commands are guild-only.
-
 ### Management Commands
 
 These require:
 
-- ticket system access in the guild
-- Tier 3 / top-customer access, or a `100k+` member server
 - effective `administrator`
 
 Commands:
@@ -143,8 +135,6 @@ Commands:
 
 These require:
 
-- ticket system access in the guild
-- Tier 3 / top-customer access, or a `100k+` member server
 - one of:
   - effective `administrator`
   - a configured global ticket `staff role`
@@ -160,8 +150,7 @@ Commands:
 
 These require:
 
-- ticket system access in the guild
-- claiming enabled on that panel/option
+- claiming enabled on that panel
 - the ticket must not already be claimed
 - the ticket creator cannot claim their own ticket
 - one of:
@@ -179,7 +168,6 @@ Commands:
 
 These require:
 
-- ticket system access in the guild
 - one of:
   - the ticket creator, if `Ticket Opener Can Close` is enabled on that option
   - the current claimer
@@ -197,7 +185,6 @@ Commands:
 
 For ticket channels, these all share the same main access rule:
 
-- ticket system access in the guild
 - one of:
   - the current claimer
   - server owner / effective `administrator`
