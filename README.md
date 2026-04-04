@@ -35,9 +35,11 @@ The current management UI is grouped by section:
 - per-option claim categories and claim rename templates
 - per-option claim staff visibility toggles
 - per-option close categories and close rename templates
-- per-option ticket opener close toggles
+- per-option ticket creator close toggles
 - per-option support roles
 - per-option trainee roles
+- personal ticket claim profiles for support/staff/trainee members
+- server-wide ticket profile enable/disable control
 - per-option required-role gates with any-role or all-role matching
 - per-option trainee claim, close, and speak toggles
 - blacklists
@@ -77,8 +79,10 @@ tickets resend [channel] - Resend/recreate a live ticket panel message
 tickets panels [name] - Manage ticket panels, or open a specific panel by name
 tickets forms [name] - Manage reusable ticket forms, or open a specific form by name
 tickets options - Manage ticket panel options
+tickets profile - Manage your personal ticket claim profile
+tickets profiles - Manage ticket profiles server wide as an admin
 tickets blacklist [member|role] - View, add, or remove blacklist entries
-tickets stats [member] - Show server ticket stats, or handled stats for a staff member
+tickets stats [30m|2h|4h20m|3d|2w|today|all] [member] - Show ticket stats for the server, or workload stats for a staff member
 tickets list - List all currently open tickets in the server
 ```
 
@@ -106,6 +110,7 @@ tickets transcript [channel|case_id] - Generate or refresh a ticket transcript, 
 /deny - Remove a user or role from a ticket
 /unclaim - Remove the current claimer from a ticket
 /rename - Rename a ticket channel, or rename any text channel if you have Manage Channels
+/stats - Show ticket stats for the server or a staff member
 /tickets - List all currently open tickets in the server
 /move - Move a ticket to another option, or move a regular text channel to a category if you have Manage Channels
 /close - Close a ticket
@@ -130,6 +135,7 @@ Commands:
 - `tickets forms`
 - `tickets options`
 - `tickets blacklist`
+- `tickets profiles`
 
 ### Stats And Listing Commands
 
@@ -146,11 +152,18 @@ Commands:
 - `tickets list`
 - `/tickets`
 
+### Profiles
+
+- `tickets profile`
+  - available if you are configured as ticket support, ticket trainee, hold a global ticket staff role, or have effective `administrator`
+- `tickets profiles`
+  - requires effective `administrator`
+
 ### Claim
 
 These require:
 
-- claiming enabled on that panel
+- claiming enabled on that panel/option
 - the ticket must not already be claimed
 - the ticket creator cannot claim their own ticket
 - one of:
@@ -169,7 +182,7 @@ Commands:
 These require:
 
 - one of:
-  - the ticket creator, if `Ticket Opener Can Close` is enabled on that option
+  - the ticket creator, if `Ticket Creator Can Close` is enabled on that option
   - the current claimer
   - server owner / effective `administrator`
   - a configured option `support role` if the ticket is not currently claimed
@@ -213,7 +226,24 @@ Commands:
 Extra notes:
 
 - `allow` and `deny` also require the bot to have `Manage Channels`.
+- `delete` is stricter for trainees. A trainee cannot delete a ticket.
 - `transcript` by case ID falls back to archived transcript access. If there is no matching live ticket record, only the server owner or an effective administrator can access it.
+
+### Reason Editing
+
+Reason editing uses its own access rule.
+
+The following can update stored claim, close, reopen, and delete reasons:
+
+- effective `administrator`
+- the current claimer
+- configured support or staff roles when the claimer is a trainee
+- configured support or staff roles when the ticket is currently unclaimed
+
+Commands:
+
+- `tickets reason`
+- `/reason`
 
 ### Rename
 
@@ -377,7 +407,7 @@ Option behavior is grouped into these sections:
   - `Member`
     - `Required Roles`
       - only members with these roles can open tickets from this option
-      - if left empty, anyone allowed to use the ticket system can open the option
+      - if left empty, any member who can use the panel can open the option
     - `Require All Roles`
       - requires every selected role instead of allowing any one of them
       - only matters when at least one required role is configured
@@ -385,7 +415,7 @@ Option behavior is grouped into these sections:
       - controls whether the ticket creator can close tickets from this option
     - `Close On Leave`
       - automatically closes open tickets from this option if the ticket creator leaves the server
-      - uses the normal close flow and records the reason as `Ticket opener left the server.`
+      - uses the normal close flow and records the reason as `Ticket creator left the server.`
   - `Support`
     - `Support Roles`
       - staff roles that should see or manage tickets from that option
@@ -559,6 +589,23 @@ Claiming lets one staff member take ownership of a ticket.
 - if the option has a claim rename template, the ticket is renamed on claim
 - the claim message can be sent
 
+If the person claiming the ticket has a personal `tickets profile` configured, these claim-time settings can be overridden by their profile:
+
+- claim category
+- claim rename template
+- claim message
+
+Any profile field left blank falls back to the option's normal claim settings.
+
+Administrators can use `tickets profiles` to:
+
+- enable or disable ticket profiles server wide
+- select a member from the user picker
+- edit that member's profile overrides
+- enable or disable that member's profile overrides
+
+When server-wide profiles are disabled, saved personal profiles are kept but ignored until profiles are enabled again.
+
 ### Unclaim
 
 Unclaiming removes the current ticket owner.
@@ -664,7 +711,7 @@ If `Close On Leave` is enabled on the option:
 - any still-open ticket from that option closes automatically when the ticket creator leaves the server
 - it uses the normal close flow instead of a special one-off shutdown path
 - close category moves, close rename templates, close messages, and close DMs still behave normally
-- the recorded close reason becomes `Ticket opener left the server.`
+- the recorded close reason becomes `Ticket creator left the server.`
 
 ## Transcripts
 
@@ -853,53 +900,42 @@ ticket.reason.closed
 ticket.reason.reopened
 ticket.reason.deleted
 
-TICKET AUTHOR
-ticket.author.id
-ticket.author.name
-ticket.author.display_name
-ticket.author.tag
-ticket.author.full
-ticket.author.mention
+TICKET USERS
+These same user fields are available for each of:
+ticket.author
+ticket.creator
+ticket.claimer
+ticket.closer
+ticket.reopener
+ticket.deleter
 
-TICKET CREATOR
-ticket.creator.id
-ticket.creator.name
-ticket.creator.display_name
-ticket.creator.tag
-ticket.creator.full
-ticket.creator.mention
+Use any of the following suffixes with the prefixes above:
+.id
+.name
+.display_name
+.tag
+.full
+.mention
+.bot
+.display_avatar
+.avatar
+.guild_avatar
+.created_at
+.created_at_timestamp
+.joined_at
+.joined_at_timestamp
+.color
+.role_list
+.role_text_list
+.top_role
+.role_count
+.join_position
+.join_position_suffix
+.boost
+.boost_since
+.boost_since_timestamp
 
-TICKET CLAIMER
-ticket.claimer.id
-ticket.claimer.name
-ticket.claimer.display_name
-ticket.claimer.tag
-ticket.claimer.full
-ticket.claimer.mention
-
-TICKET CLOSER
-ticket.closer.id
-ticket.closer.name
-ticket.closer.display_name
-ticket.closer.tag
-ticket.closer.full
-ticket.closer.mention
-
-TICKET REOPENER
-ticket.reopener.id
-ticket.reopener.name
-ticket.reopener.display_name
-ticket.reopener.tag
-ticket.reopener.full
-ticket.reopener.mention
-
-TICKET DELETER
-ticket.deleter.id
-ticket.deleter.name
-ticket.deleter.display_name
-ticket.deleter.tag
-ticket.deleter.full
-ticket.deleter.mention
+Member-specific fields like `.joined_at`, `.guild_avatar`, `.role_list`, `.top_role`, `.join_position`, and boost values return `N/A` when that data is not available for that ticket user.
 
 TICKET CHANNEL
 ticket.channel.id
@@ -913,6 +949,8 @@ ticket.panel.message.id
 ticket.panel.next_case_id
 ticket.panel.dropdown_placeholder
 ticket.panel.maximum
+ticket.panel.auto_delete_after_close
+ticket.panel.auto_delete_after_close.human
 ticket.panel.channel.id
 ticket.panel.channel.name
 ticket.panel.channel.mention
@@ -929,6 +967,8 @@ ticket.controller.message.id
 ticket.controller.next_case_id
 ticket.controller.dropdown_placeholder
 ticket.controller.maximum
+ticket.controller.auto_delete_after_close
+ticket.controller.auto_delete_after_close.human
 ticket.controller.channel.id
 ticket.controller.channel.name
 ticket.controller.channel.mention
@@ -982,13 +1022,20 @@ ticket.form.field.<key>.required
 ticket.form.field.<key>.type
 
 FORM FIELD ENTITY VALUES
-user_select:
+For `user_select`, the field supports the same user suffixes as the main ticket user vars above.
+
+Examples:
 ticket.form.field.<key>.id
 ticket.form.field.<key>.name
 ticket.form.field.<key>.display_name
 ticket.form.field.<key>.tag
 ticket.form.field.<key>.full
 ticket.form.field.<key>.mention
+ticket.form.field.<key>.display_avatar
+ticket.form.field.<key>.joined_at
+ticket.form.field.<key>.role_list
+ticket.form.field.<key>.top_role
+ticket.form.field.<key>.boost_since
 
 role_select / channel_select:
 ticket.form.field.<key>.id
@@ -1007,7 +1054,6 @@ ticket.transcript.expires_at.short
 
 ## Tips
 
-- You can search in any user, role, or channel dropdown if your desired option is not showing up.
 - Use `ticket.form.field.<key>` for the display value users submitted.
 - Use `ticket.form.field.<key>.raw` when you need the raw stored value or selected ID.
 - `ticket.creator.*` is an alias of `ticket.author.*`.
