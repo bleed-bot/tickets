@@ -18,9 +18,9 @@ The current management UI is grouped by section:
 ## What The System Supports
 
 - up to `15` ticket panels per server
-- up to `5` active options per panel
-- up to `5` standby options saved in the inactive mode of that panel
-- up to `75` active options at once (5 * 15)
+- up to `10` active options per panel
+- up to `10` standby options saved in the inactive mode of that panel
+- up to `150` active options at once (10 * 15)
 - up to `25` reusable forms per server
 - button panels and dropdown panels
 - custom greeting, required roles, claim, move, close, reopen, inactivity, auto-close, auto-delete, and log messages
